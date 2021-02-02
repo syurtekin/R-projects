@@ -1,0 +1,78 @@
+library(tidyverse) 
+library(sp)
+
+
+setwd("C:/Users/sy/Desktop/sy")
+TUR <- readRDS("TUR_adm1.rds")
+
+
+plot(TUR)
+
+TUR@data %>% as_tibble() %>% head(10)
+ggplot(TUR, aes(x = long, y = lat)) +
+  geom_polygon()
+
+ggplot(TUR, aes(x = long, y = lat)) +
+  geom_polygon(aes(group = group)) +
+  coord_fixed()
+TUR_for <- fortify(TUR)
+head(TUR_for)
+ggplot(TUR_for) + 
+  geom_polygon(aes(x = long, y = lat,
+                   group = group),
+               color = "white",
+               fill = "#97ECEA") +
+  theme_void() + 
+  coord_fixed()
+
+data  =  read.table('potato_pro.csv', header =T, sep=",")
+data
+options(max.print = 999999)
+
+
+data_map = data[16, 2:76]
+data_map
+
+data_map2<-as.data.frame(t(data_map))
+data_map2
+
+
+library(tibble)
+library(dplyr)
+data_map2<-data_map2 %>%
+  rownames_to_column("cities")
+data_map2
+
+
+names(data_map2)[2] <- "potato_pro"
+data_map2
+
+
+id_and_cities <- data_frame(id = rownames(TUR@data),
+                                cities = TUR@data$NAME_1) %>% 
+  left_join(data_map2, by = "cities")
+
+TUR_mat <- fortify(TUR)
+
+id_and_cities %>% head()
+
+
+
+final_map <- left_join(TUR_for, id_and_cities, by = "id")
+
+final_map %>% head()
+
+ggplot(final_map) +
+  geom_polygon( aes(x = long, y = lat, group = group, fill = potato_pro),
+                color = "grey") +
+  coord_map() +
+  theme_void() + 
+  labs(title = "Potato Production in Turkey",
+       subtitle = paste0("Total Production: ", sum(data_map2$potato_pro, na.rm = TRUE)),
+       caption = "Resource: Türkiye İstatistik Kurumu") +
+  scale_fill_distiller(name = "Potato Production",
+                       palette = "Spectral", limits = c(0,720000), na.value = "black") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+
