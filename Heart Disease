@@ -1,0 +1,112 @@
+library(caret)
+library(e1071)
+library(rpart)
+library(ggplot2)
+#read data
+setwd("C:/Users/sy/Desktop/sy")
+data_heart = read.csv("heart_disease_dataset.csv", header = T, sep = ",")
+data_heart
+
+#split randomly test and train data. 75% train, 25% test.
+ind<- sample(2, nrow(data_heart), replace = T, prob = c(0.75,0.25))
+train<-data_heart[ind==1, ]
+test<-data_heart[ind==2, ]
+
+#using svm accucary = 91%
+
+model.svm = svm(formula = TV ~ age + sex +cp +trestbps+chol+fbs+restecg+thalach+exang+oldpeak+slope+ca+thal,
+                 data = train,
+                 type = 'C-classification',
+                 kernel = 'linear')
+model.svm
+
+predicted = predict(model.svm, test)
+predicted
+
+
+library(e1071)
+a = table(test$TV==predict(model.svm,test))/length(test$TV)
+a
+confusionMatrix(table(test$TV,predicted))
+
+svm = sum(diag(table(test$TV,predicted)))/sum((table(test$TV,predicted)))
+svm
+
+model.svm.cost = svm(TV ~ age + sex +cp +trestbps +chol + fbs +restecg + thalach + exang +oldpeak + slope + ca + thal ,train,kernel='linear',cost=0.3)
+table(test$TV==predict(model.svm,test))/length(test$TV)
+
+model.svm.radial = svm(TV ~ age + sex +cp +trestbps +chol + fbs +restecg + thalach + exang +oldpeak + slope + ca + thal , train, kernel='radial')
+
+table(test$TV==predict(model.svm.radial,test))/length(test$TV)
+
+
+#using decision tree accuracy = 80%
+library(rpart)
+library(rpart.plot)
+model.dt = rpart(TV ~ age + sex +cp +trestbps +chol + fbs +restecg + thalach + exang +oldpeak + slope + ca + thal, train)
+model.dt
+
+predicted2 = predict(model.dt,test,type="vector")
+predicted2
+
+labels = ifelse(predicted2>0.5, '1','0')
+labels
+labels<-as.factor(labels)
+
+b = table(labels == test$TV)/ length(test$TV)
+b
+confusionMatrix(table(labels,test$TV))
+rpart.plot(model.dt)
+dt = sum(diag(table(labels,test$TV)))/sum((table(labels,test$TV)))
+dt
+
+#using random forest - accuracy = 86%
+
+library(randomForest)
+
+data_heart$TV <- as.character(data_heart$TV)
+data_heart$TV <- as.factor(data_heart$TV)
+
+rf_fit = randomForest(TV ~age + sex +cp +trestbps +chol + fbs +restecg + thalach + exang +oldpeak + slope + ca + thal, data = data_heart)
+rf_fit
+predicted3 = predict(rf_fit,test)
+predicted3
+
+c = table(test$TV==predicted3)/length(test$TV)
+c
+confusionMatrix(table(predicted3,test$TV))
+conf<-rf_fit$confusion
+conf
+
+rf = sum(diag(table(predicted3,test$TV)))/sum((table(predicted3,test$TV)))
+rf
+
+#plot(rf_fit)
+
+#using neural networks accuracy = 83%
+library(nnet)
+library(magrittr)
+
+model_nnet= nnet(TV~age + sex +cp +trestbps +chol + fbs +restecg + thalach + exang +oldpeak + slope + ca + thal, data= data_heart, size = 5)
+model_nnet
+
+predicted4 = predict(model_nnet,test)
+predicted4
+
+predicted4_class <- predicted4 %>%
+  { ifelse(. < 0.5, "0", "1") }
+
+predicted4_class<-as.factor(predicted4_class)
+a = confusionMatrix(table(predicted4_class,test$TV))
+a
+
+nn = sum(diag(table(predicted4_class,test$TV)))/sum(table(predicted4_class,test$TV))
+nn
+
+## According to accuracy rate the best method is random forest.
+
+# Comparing Success with Barchart
+
+x<-c("SVM","Decision Tree","Random Forest", "Neural Networks")
+y<-c(0.8395,0.8024,0.8652,0.8194)
+accuracy<-barplot(y,xlab = "Classification Methods", ylab = "Accuracy Rate", main = "Accuracy of Methods",border ="green",density = 40, ylim = c(0,1.05))
