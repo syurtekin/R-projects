@@ -1,0 +1,86 @@
+#read data
+library(car)
+library(ggplot2)
+library(devtools)
+require(moonBook)
+library(magrittr)
+setwd("C:/Users/sy/Desktop/sy")
+data = read.csv("waste_municipality.csv", header = T, sep = ",")
+data
+head(data)
+
+#scatterplot waste and population
+scatterplot(Waste+Population ~year ,data = data,
+            xlab="Population Of Municipalities Served By Municipal Waste Services in Turkey.", ylab="Amount Of Municipal Waste Collected in Turkey.")
+
+#using linear regression model
+lm.fit =lm(Waste+Population ~ year ,data=data)
+lm.fit
+
+lm.fit$coefficients
+
+coef(lm.fit)
+
+confint (lm.fit)
+newdata<-data.frame(year = c(2019,2021,2025))
+a<-predict(lm.fit ,newdata = newdata, interval = "confidence" )
+a<-as.array(a)
+a
+
+
+#second method
+lm.fit1 = lm(Population ~ year, data=data)
+lm.fit1
+
+new<-data.frame(year = c(2019,2021,2025))
+b<-predict(lm.fit1,newdata = new, interval = "confidence")
+b
+lm.fit2 = lm(Waste ~ year, data=data)
+lm.fit2
+
+new1<-data.frame(year = c(2019,2021,2025))
+c<-predict(lm.fit2, newdata=new1, interval = "confidence")
+c
+#kernel regression method
+library(np)
+
+model.np<-npreg(Waste+Population ~ year, data=data)
+model.np
+newdata4<-data.frame(year = c(2019,2021,2025))
+d<-predict(model.np, newdata =  newdata4 )
+d<-as.array(d)
+d
+
+model.np1<-npreg(Waste~year, data= data)
+model.np1
+#second method
+newdata2<-data.frame(year = c(2019,2021,2025))
+e<-predict(model.np1, newdata = newdata2)
+
+
+model.np2<-npreg(Population ~ year, data=data)
+model.np2
+
+newdata3<-data.frame(year = c(2019,2021,2025))
+f<-predict(model.np2, newdata = newdata3)
+f<-as.array(f)
+#comparing the results by plotting bar charts
+colors = c("green","orange")
+regression<-c("Linear regression","kernel regression")
+values<-matrix(c(107344529,111167147,118812385,108161761,108161761,0), nrow = 3,ncol = 3, byrow = TRUE)
+barplot(values, main = "prediction" ,ylab = "prediction", col = colors)
+barplot
+legend("topleft", regression, cex = 0.5, fill = colors)
+dev.off()
+
+scatterplot(Waste~Population ,data = data,
+            xlab="Population Of Municipalities Served By Municipal Waste Services in Turkey.", ylab="Amount Of Municipal Waste Collected in Turkey.")
+
+#adding smoothing
+my_graph <- ggplot(data, aes(x = Waste, y = Population)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              col = "red",
+              se = FALSE,
+              size = 1)
+my_graph
